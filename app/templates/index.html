@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rule Engine Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.24.1/ace.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .tab {
+        padding: 10px 20px;
+        background-color: #eee;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .tab.active {
+        background-color: #007bff;
+        color: white;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      input[type="text"],
+      textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      .result {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 4px;
+      }
+
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+      }
+
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+
+      #editor {
+        height: 200px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 15px;
+      }
+
+      .code-editor {
+        margin-bottom: 15px;
+      }
+
+      .helper-text {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+      }
+
+      .rules-list {
+        margin-bottom: 20px;
+      }
+
+      .rule-item {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        background-color: #fff;
+      }
+
+      .checkbox-list {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+      }
+
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        padding: 5px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+      }
+
+      .checkbox-item input[type="checkbox"] {
+        margin-right: 10px;
+      }
+
+      .checkbox-item label {
+        margin-bottom: 0;
+        flex-grow: 1;
+      }
+
+      .combined-rule-display {
+        margin-top: 15px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+
+      .preview-button {
+        background-color: #28a745;
+        margin-right: 10px;
+      }
+
+      .code-editor {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 15px;
+      }
+
+      #jsonEditor {
+        width: 100%;
+        height: 200px;
+        font-size: 14px;
+      }
+
+      .rule-item {
+        display: flex;
+        align-items: stretch;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        background-color: #fff;
+      }
+
+      .rule-content {
+        flex-grow: 1;
+        margin-right: 15px;
+      }
+
+      .delete-button {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0 15px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        align-self: stretch;
+      }
+
+      .delete-button:hover {
+        background-color: #c82333;
+      }
+
+      .rule-item pre {
+        margin: 10px 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Rule Engine Interface</h1>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('create')">
+          Create Rule
+        </button>
+        <button class="tab" onclick="switchTab('evaluate')">
+          Evaluate Rule
+        </button>
+        <button class="tab" onclick="switchTab('combine')">
+          Combine Rules
+        </button>
+        <button class="tab" onclick="switchTab('list')">List Rules</button>
+      </div>
+
+      <div id="createTab" class="tab-content active">
+        <h2>Create New Rule</h2>
+        <form id="createRuleForm" onsubmit="createRule(event)">
+          <div class="form-group">
+            <label for="ruleName">Rule Name:</label>
+            <input type="text" id="ruleName" required />
+          </div>
+          <div class="form-group">
+            <label for="editor">Rule Expression:</label>
+            <div id="editor"></div>
+            <div class="helper-text">
+              Example: ((age > 30 AND department = 'Sales') OR (age < 25 AND
+              department = 'Marketing')) AND (salary > 50000 OR experience > 5)
+            </div>
+          </div>
+          <button type="submit">Create Rule</button>
+        </form>
+        <div id="createResult" class="result"></div>
+      </div>
+
+      <div id="evaluateTab" class="tab-content">
+        <h2>Evaluate Rule</h2>
+        <form id="evaluateRuleForm" onsubmit="evaluateRule(event)">
+          <div class="form-group">
+            <label for="ruleSelect">Select Rule:</label>
+            <select id="ruleSelect" required></select>
+          </div>
+          <div class="form-group">
+            <label for="jsonEditor">Input Data (JSON):</label>
+            <div
+              id="jsonEditor"
+              class="code-editor"
+              style="height: 200px"
+            ></div>
+            <div class="helper-text">
+              Example: {"age": 35, "department": "Sales", "salary": 60000,
+              "experience": 3}
+            </div>
+          </div>
+          <button type="submit">Evaluate</button>
+        </form>
+        <div id="evaluateResult" class="result"></div>
+      </div>
+
+      <div id="combineTab" class="tab-content">
+        <h2>Combine Rules</h2>
+        <form id="combineRulesForm" onsubmit="combineRules(event)">
+          <div class="form-group">
+            <label>Select Rules to Combine:</label>
+            <div id="rulesCheckboxList" class="checkbox-list">
+              <!-- Checkboxes will be populated dynamically -->
+            </div>
+          </div>
+          <button
+            type="button"
+            class="preview-button"
+            onclick="previewCombinedRule()"
+          >
+            Preview Combined Rule
+          </button>
+          <button type="submit">Combine and Save</button>
+        </form>
+        <div
+          id="combinedRulePreview"
+          class="combined-rule-display"
+          style="display: none"
+        >
+          <h3>Combined Rule Preview:</h3>
+          <pre id="combinedRuleText"></pre>
+        </div>
+        <div id="combineResult" class="result"></div>
+      </div>
+
+      <div id="listTab" class="tab-content">
+        <h2>Existing Rules</h2>
+        <div id="rulesList" class="rules-list">
+          <!-- Rules will be populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let ruleEditor;
+      let jsonEditor;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize rule editor
+        ruleEditor = ace.edit("editor");
+        ruleEditor.setTheme("ace/theme/monokai");
+        ruleEditor.session.setMode("ace/mode/text");
+        ruleEditor.setOption("showPrintMargin", false);
+
+        // Initialize JSON editor
+        jsonEditor = ace.edit("jsonEditor");
+        jsonEditor.setTheme("ace/theme/monokai");
+        jsonEditor.session.setMode("ace/mode/json");
+        jsonEditor.setOption("showPrintMargin", false);
+
+        // Set default value for JSON editor
+        const defaultJson = {
+          age: 35,
+          department: "Sales",
+          salary: 60000,
+          experience: 3,
+        };
+        jsonEditor.setValue(JSON.stringify(defaultJson, null, 2));
+
+        // Load initial data
+        loadRules();
+      });
+
+      // Tab switching functionality
+      function switchTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+        document
+          .querySelector(`[onclick="switchTab('${tabName}')"]`)
+          .classList.add("active");
+
+        // Update tab content
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.classList.remove("active");
+        });
+        document.getElementById(`${tabName}Tab`).classList.add("active");
+
+        // Refresh Ace editor size if visible
+        if (tabName === "create") {
+          ruleEditor.resize();
+        }
+        if (tabName === "evaluate") {
+          jsonEditor.resize();
+        }
+      }
+
+      // Load rules from the server
+      async function loadRules() {
+        try {
+          const response = await fetch("/api/rules");
+          const rules = await response.json();
+
+          // Update rules list tab
+          const rulesList = document.getElementById("rulesList");
+          rulesList.innerHTML = rules
+            .map(
+              (rule) => `
+            <div class="rule-item">
+                <div class="rule-content">
+                    <h3>${rule.name}</h3>
+                    <pre>${rule.rule_string}</pre>
+                    <small>Created: ${new Date(
+                      rule.created_at
+                    ).toLocaleString()}</small>
+                </div>
+                <button 
+                    class="delete-button" 
+                    onclick="deleteRule(${rule.id}, '${rule.name}')"
+                    title="Delete rule">
+                    Delete
+                </button>
+            </div>
+        `
+            )
+            .join("");
+
+          // Update rule select dropdown
+          const ruleSelect = document.getElementById("ruleSelect");
+          ruleSelect.innerHTML = rules
+            .map(
+              (rule) => `
+            <option value="${rule.id}">${rule.name}</option>
+        `
+            )
+            .join("");
+
+          // Update rules checkbox list
+          const rulesCheckboxList =
+            document.getElementById("rulesCheckboxList");
+          rulesCheckboxList.innerHTML = rules
+            .map(
+              (rule) => `
+            <div class="checkbox-item">
+                <input type="checkbox" id="rule${rule.id}" value="${rule.id}">
+                <label for="rule${rule.id}">${rule.name}</label>
+            </div>
+        `
+            )
+            .join("");
+        } catch (error) {
+          console.error("Error loading rules:", error);
+        }
+      }
+
+      // Create new rule
+      async function createRule(event) {
+        event.preventDefault();
+        const resultDiv = document.getElementById("createResult");
+
+        try {
+          const response = await fetch("/api/rules", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: document.getElementById("ruleName").value,
+              rule_string: ruleEditor.getValue(),
+            }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            resultDiv.className = "result success";
+            resultDiv.textContent = "Rule created successfully!";
+            document.getElementById("createRuleForm").reset();
+            ruleEditor.setValue("");
+            loadRules();
+          } else {
+            resultDiv.className = "result error";
+            resultDiv.textContent = result.error || "Failed to create rule";
+          }
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "Error creating rule: " + error.message;
+        }
+      }
+
+      async function deleteRule(ruleId, ruleName) {
+        if (
+          !confirm(`Are you sure you want to delete the rule "${ruleName}"?`)
+        ) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/rules/${ruleId}`, {
+            method: "DELETE",
+          });
+
+          if (response.ok) {
+            // Reload the rules list
+            loadRules();
+
+            // Show success message
+            const rulesList = document.getElementById("rulesList");
+            const successMessage = document.createElement("div");
+            successMessage.className = "result success";
+            successMessage.textContent = "Rule deleted successfully";
+            rulesList.insertBefore(successMessage, rulesList.firstChild);
+
+            // Remove success message after 3 seconds
+            setTimeout(() => {
+              successMessage.remove();
+            }, 3000);
+          } else {
+            const result = await response.json();
+            throw new Error(result.error || "Failed to delete rule");
+          }
+        } catch (error) {
+          const rulesList = document.getElementById("rulesList");
+          const errorMessage = document.createElement("div");
+          errorMessage.className = "result error";
+          errorMessage.textContent = "Error deleting rule: " + error.message;
+          rulesList.insertBefore(errorMessage, rulesList.firstChild);
+
+          // Remove error message after 3 seconds
+          setTimeout(() => {
+            errorMessage.remove();
+          }, 3000);
+        }
+      }
+
+      // Evaluate rule
+      async function evaluateRule(event) {
+        event.preventDefault();
+        const resultDiv = document.getElementById("evaluateResult");
+
+        try {
+          // Get the JSON input and parse it
+          let inputJson = jsonEditor.getValue().trim();
+          let inputData;
+
+          try {
+            inputData = JSON.parse(inputJson);
+          } catch (jsonError) {
+            throw new Error("Invalid JSON format: " + jsonError.message);
+          }
+
+          const ruleId = document.getElementById("ruleSelect").value;
+
+          if (!ruleId) {
+            throw new Error("Please select a rule to evaluate");
+          }
+
+          const response = await fetch("/api/rules/evaluate", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              rule_id: ruleId,
+              data: inputData,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            resultDiv.className = "result success";
+            resultDiv.textContent = `Rule evaluation result: ${result.result}`;
+          } else {
+            resultDiv.className = "result error";
+            resultDiv.textContent = result.error || "Failed to evaluate rule";
+          }
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "Error: " + error.message;
+        }
+      }
+
+      // Preview combined rules
+      async function previewCombinedRule() {
+        const resultDiv = document.getElementById("combineResult");
+        const previewDiv = document.getElementById("combinedRulePreview");
+        const ruleTextDiv = document.getElementById("combinedRuleText");
+
+        try {
+          const selectedRules = Array.from(
+            document.querySelectorAll("#rulesCheckboxList input:checked")
+          ).map((checkbox) => checkbox.value);
+
+          if (selectedRules.length < 2) {
+            throw new Error("Please select at least two rules to combine");
+          }
+
+          const response = await fetch("/api/rules/combine/preview", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              rule_ids: selectedRules,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            previewDiv.style.display = "block";
+            ruleTextDiv.textContent = result.combined_rule_string;
+            resultDiv.className = "result success";
+            resultDiv.textContent = "Preview generated successfully";
+          } else {
+            previewDiv.style.display = "none";
+            resultDiv.className = "result error";
+            resultDiv.textContent =
+              result.error || "Failed to preview combined rules";
+          }
+        } catch (error) {
+          previewDiv.style.display = "none";
+          resultDiv.className = "result error";
+          resultDiv.textContent =
+            "Error previewing combined rules: " + error.message;
+        }
+      }
+
+      // Combine rules
+      async function combineRules(event) {
+        event.preventDefault();
+        const resultDiv = document.getElementById("combineResult");
+
+        try {
+          const selectedRules = Array.from(
+            document.querySelectorAll("#rulesCheckboxList input:checked")
+          ).map((checkbox) => checkbox.value);
+
+          if (selectedRules.length < 2) {
+            throw new Error("Please select at least two rules to combine");
+          }
+
+          const ruleName = prompt("Enter a name for the combined rule:");
+          if (!ruleName) return;
+
+          const response = await fetch("/api/rules/combine", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              rule_ids: selectedRules,
+              name: ruleName,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            resultDiv.className = "result success";
+            resultDiv.textContent = "Rules combined successfully!";
+            loadRules();
+            // Clear checkboxes
+            document
+              .querySelectorAll("#rulesCheckboxList input:checked")
+              .forEach((checkbox) => (checkbox.checked = false));
+            document.getElementById("combinedRulePreview").style.display =
+              "none";
+          } else {
+            resultDiv.className = "result error";
+            resultDiv.textContent = result.error || "Failed to combine rules";
+          }
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "Error combining rules: " + error.message;
+        }
+      }
+    </script>
+  </body>
+</html>
