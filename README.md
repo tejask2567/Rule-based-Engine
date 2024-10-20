@@ -28,6 +28,7 @@ flask-rule-engine/
 ├── config.py
 ├── run.py
 └── README.md
+└── requirement.txt
 ```
 
 ## Setup
@@ -46,7 +47,7 @@ flask-rule-engine/
 
 3. Install the required packages:
    ```
-   pip install flask flask-sqlalchemy
+   pip install -r requirements.txt
    ```
 
 4. Initialize the database:
