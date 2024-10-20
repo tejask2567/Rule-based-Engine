@@ -15,7 +15,7 @@ This project implements a flexible rule engine using Flask, allowing users to cr
 ## Project Structure
 
 ```
-flask-rule-engine/
+Rule-based-Engine/
 │
 ├── app/
 │   ├── __init__.py
@@ -35,8 +35,8 @@ flask-rule-engine/
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/flask-rule-engine.git
-   cd flask-rule-engine
+   git clone https://github.com/tejask2567/Rule-based-Engine.git
+   cd Rule-based-Engine
    ```
 
 2. Create a virtual environment and activate it:
